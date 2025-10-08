@@ -1,6 +1,6 @@
 <template>
   <div class="login-form-container">
-    <h1>UBA-RDC E-TAX APP</h1>
+    <h1>UBA-RDC Deallocation</h1>
     <h2 class="text-primary">
       AUTHENTIFICATION
     </h2>
@@ -34,7 +34,7 @@
             :append-inner-icon="passwordVisible ? 'mdi-eye-off' : 'mdi-eye'"
             :type="passwordVisible ? 'text' : 'password'"
             :error-messages="errorMessage"
-            placeholder="Entrer votre mot de passe"
+            placeholder="Enter your password"
             prepend-inner-icon="mdi-lock-outline"
             variant="solo-filled"
             rounded
@@ -54,12 +54,12 @@
         block
         rounded
       >
-        <span class="text-none" style="letter-spacing: 0;">Se connecter</span>
+        <span class="text-none" style="letter-spacing: 0;">Login</span>
       </v-btn>
     </Form>
   </div>
 
-  <LoginOtpDialog v-model="showOtpForm" :email="email" />
+  <LoginOtpDialog v-model="showOtpForm" :token="token" />
 </template>
 
 <script lang="ts" setup>
@@ -67,6 +67,7 @@ import { Form, Field } from 'vee-validate'
 import { object, string } from 'yup'
 import { useSnackbarStore } from '@/stores/snackbar'
 import { useAuthStore } from '@/stores/auth'
+import CryptoUtil from '~/utilities/CryptoUtil'
 
 interface FormValueI {
   email: string;
@@ -75,29 +76,35 @@ interface FormValueI {
 
 const authStore = useAuthStore()
 const snackbarStore = useSnackbarStore()
+const runtimeConfig = useRuntimeConfig()
 
 const passwordVisible = ref(false)
 const loading = ref(false)
 const showOtpForm = ref(false)
 const email = ref()
+const token = ref()
 const { showErrorSnackbar } = snackbarStore
 
 const loginSchema = object({
   email: string()
-    .email('Veuillez renseigner un email valide')
-    .required('Veuillez renseigner un email'),
-  password: string().required('Veuillez renseigner un mot de passe')
+    .email('Please enter a valid email address')
+    .required('Please enter an email address'),
+  password: string().required('Please enter a password')
 })
 
 function onSubmit (values: FormValueI) {
-  authStore.signin(values)
-    .then(({ error }) => {
+  authStore.signin({
+    ...values,
+    password: CryptoUtil.encrypt(values.password, runtimeConfig.public.cryptoPrivateKey)
+  })
+    .then(({ error, data }) => {
       loading.value = false
       if (error.value) {
         if (error.value.statusCode === 401) {
-          showErrorSnackbar(error.value.data.msg || 'Identifiants incorrects')
+          showErrorSnackbar(error.value.data.msg || 'Incorrect login')
         }
       } else {
+        token.value = data.value.token
         showOtpForm.value = true
       }
     })
