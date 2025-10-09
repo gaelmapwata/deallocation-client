@@ -7,3 +7,9 @@ export interface RoleI {
   permissions?: PermissionI[];
   ressources?: RessourceI[];
 }
+
+// eslint-disable-next-line no-shadow
+export enum RoleE {
+  ADMIN = 'admin',
+  OPS = 'ops',
+}
