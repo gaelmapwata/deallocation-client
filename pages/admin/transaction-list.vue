@@ -12,7 +12,7 @@
       <v-card-text>
         <div class="d-flex justify-end">
           <a
-            v-if="userHasOneOfPermissions(currentUser, [PERMISSIONS.TRANSACTION.EXPORT])"
+            v-if="userHasOneOfPermissions( ['TRANSACTION.EXPORT'])"
             target="_blank"
             @click="handleExportTransactions()"
           >
@@ -82,13 +82,12 @@ import { TransactionI } from '@/types/transaction'
 import { useTransactionStore } from '@/stores/transaction'
 import { useSnackbarStore } from '@/stores/snackbar'
 // eslint-disable-next-line import/extensions
-import { PERMISSIONS, shouldHaveOneOfPermissions, userHasOneOfPermissions } from '~/utilities/auth.util'
-import { UserI } from '~/types/user'
+import { shouldHaveOneOfPermissions, userHasOneOfPermissions } from '~/utilities/auth.util'
 
 definePageMeta({
   layout: 'admin',
   middleware: [(_, __, next) => shouldHaveOneOfPermissions({
-    next, permissions: [PERMISSIONS.TRANSACTION.READ]
+    next, permissions: ['TRANSACTION.READ']
   })]
 })
 
@@ -96,9 +95,6 @@ useAdminBreadcrumb('mdi-security', [{
   title: 'Transactions',
   href: '/admin/transaction-list'
 }])
-
-const { data: currentUserData } = useAuth()
-const currentUser = currentUserData.value as UserI
 
 const transactionStore = useTransactionStore()
 const snackbarStore = useSnackbarStore()

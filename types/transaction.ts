@@ -6,7 +6,6 @@ export interface TransactionI {
   amount: number;
   currency: string;
   errorFinacle?: string;
-  errorAirtelMoney?: string;
   success: boolean;
   error: string;
   createdAt?: string;

@@ -2,7 +2,7 @@
   <div class="page-container">
     <div class="d-flex mb-4 justify-end">
       <v-btn
-        v-if="userHasOneOfPermissions(['ROLE:ADD'])"
+        v-if="userHasOneOfPermissions(['ROLE:CREATE'])"
         prepend-icon="mdi-plus"
         color="primary"
         rounded="xl"
@@ -11,7 +11,7 @@
         <span class="text-none">Ajouter</span>
       </v-btn>
       <v-btn
-        v-if="userHasOneOfPermissions(['ROLE:EDIT'])"
+        v-if="userHasOneOfPermissions(['ROLE:UPDATE'])"
         :disabled="!selectedRole"
         prepend-icon="mdi-pencil"
         color="white"

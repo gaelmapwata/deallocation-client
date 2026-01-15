@@ -5,7 +5,11 @@ import { UserI } from '../types/user'
 
 // eslint-disable-next-line import/prefer-default-export
 export const useUserStore = defineStore('user', {
-  state: () => ({}),
+  state: () => ({
+    users: [] as UserI[],
+    loading: false,
+    cached: false
+  }),
   actions: {
     storeUser (user: UserI) {
       return new Promise((resolve) => {
@@ -39,6 +43,21 @@ export const useUserStore = defineStore('user', {
         })
       })
     },
+    fetchUsers (force = false) {
+      if (!this.loading && (!this.cached || force)) {
+        this.loading = true
+
+        useFetchApi('/users/list-users', {
+          method: 'get'
+        }).then(({ data }) => {
+          if (data.value) {
+            this.users = data.value
+            this.loading = false
+            this.cached = true
+          }
+        })
+      }
+    },
     updateUser (payload: UserI) {
       return new Promise((resolve) => {
         useFetchApi(`/users/${payload.id}`, {
@@ -65,6 +84,53 @@ export const useUserStore = defineStore('user', {
             const { showSuccessSnackbar } = snackbarStore
             showSuccessSnackbar('Utilisateur supprimé avec succès')
 
+            resolve(null)
+          }
+        })
+      })
+    },
+    lockUser (userId: number) {
+      return new Promise((resolve) => {
+        useFetchApi(`/users/${userId}/lock`, {
+          method: 'put'
+        }).then(({ status, data }) => {
+          if (status.value === 'success') {
+            const snackbarStore = useSnackbarStore()
+            const { showSuccessSnackbar } = snackbarStore
+            showSuccessSnackbar('User successfully locked')
+
+            resolve(data.value)
+          }
+        })
+      })
+    },
+    unlockUser (userId: number) {
+      return new Promise((resolve) => {
+        useFetchApi(`/users/${userId}/unlock`, {
+          method: 'put'
+        }).then(({ status, data }) => {
+          if (status.value === 'success') {
+            const snackbarStore = useSnackbarStore()
+            const { showSuccessSnackbar } = snackbarStore
+            showSuccessSnackbar('User successfully unlocked')
+
+            resolve(data.value)
+          }
+        })
+      })
+    },
+    validateUser (userId: number) {
+      return new Promise((resolve) => {
+        useFetchApi(`/users/${userId}/validate`, {
+          method: 'put'
+        }).then(({ status, data }) => {
+          if (status.value === 'success') {
+            const snackbarStore = useSnackbarStore()
+            const { showSuccessSnackbar } = snackbarStore
+            showSuccessSnackbar('User successfully validated')
+
+            resolve(data.value)
+          } else {
             resolve(null)
           }
         })

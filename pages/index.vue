@@ -24,7 +24,7 @@
       <v-col cols="12" md="7" lg="8">
         <div>
           <p
-            v-if="userHasOneOfPermissions(currentUser, [PERMISSIONS.TRANSACTION.READ])"
+            v-if="userHasOneOfPermissions(['TRANSACTION.READ'])"
             class="mb-1"
           >
             Key figures for successful transactions
@@ -66,7 +66,7 @@
 <script lang="ts" setup>
 import { UserI } from '~/types/user'
 // eslint-disable-next-line import/extensions
-import { PERMISSIONS, userHasOneOfPermissions } from '@/utilities/auth.util'
+import { userHasOneOfPermissions } from '@/utilities/auth.util'
 
 definePageMeta({
   layout: 'admin'

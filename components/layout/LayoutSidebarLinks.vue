@@ -2,7 +2,6 @@
   <template v-for="menuItem in groupedMenuItems" :key="menuItem.text">
     <div
       v-if="userHasOneOfPermissions(
-        currentUser,
         menuItem.items?.flatMap(item => item?.permissions || []))"
     >
       <small class="ml-3">{{ menuItem.text }}</small>
@@ -13,7 +12,6 @@
               <template
                 v-if="
                   userHasOneOfPermissions(
-                    currentUser,
                     item.subItems?.flatMap(subItem => subItem?.permissions || []) || []
                   )"
               >
@@ -43,8 +41,8 @@
                       :key="subItem.text"
                     >
                       <v-list-item
-                        v-if="userHasOneOfPermissions(currentUser,
-                                                      subItem?.permissions || [])"
+                        v-if="userHasOneOfPermissions(
+                          subItem?.permissions || [])"
                         :to="subItem.to"
                         append-icon="mdi-chevron-right"
                         color="primary"
@@ -92,11 +90,9 @@
 
 <script lang="ts" setup>
 // eslint-disable-next-line import/extensions
-import { PERMISSIONS, userHasOneOfPermissions } from '@/utilities/auth.util'
-import { UserI } from '~/types/user'
+import { userHasOneOfPermissions } from '@/utilities/auth.util'
 
-const { signOut, data: currentUserData } = useAuth()
-const currentUser = currentUserData.value as UserI
+const { signOut } = useAuth()
 
 const groupedMenuItems: Array<{
   text: string,
@@ -119,7 +115,7 @@ const groupedMenuItems: Array<{
         text: 'Accueil',
         icon: 'mdi-view-dashboard',
         to: '/admin',
-        permissions: [PERMISSIONS.TRANSACTION.READ]
+        permissions: ['TRANSACTION:READ']
       }
     ]
   },
@@ -130,19 +126,31 @@ const groupedMenuItems: Array<{
         text: 'Utilisateurs',
         icon: 'mdi-account-group',
         to: '/admin/users',
-        permissions: [PERMISSIONS.USER.READ]
+        permissions: ['USER:READ']
       },
       {
         text: 'Roles',
         icon: 'mdi-security',
         to: '/admin/roles',
-        permissions: [PERMISSIONS.ROLE.READ]
+        permissions: ['ROLE:READ']
+      },
+      {
+        text: 'Partenaires',
+        icon: 'mdi-account-group',
+        to: '/admin/partner-detail',
+        permissions: ['PARTNERDETAIL:READ']
       },
       {
         text: 'Transactions',
         icon: 'mdi-bank',
         to: '/admin/transaction-list',
-        permissions: [PERMISSIONS.TRANSACTION.READ]
+        permissions: ['TRANSACTION:READ']
+      },
+      {
+        text: 'Branches',
+        icon: 'mdi-domain',
+        to: '/admin/branches',
+        permissions: ['BRANCH.READ']
       }
     ]
   }

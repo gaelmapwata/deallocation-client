@@ -2,7 +2,7 @@
   <div class="page-container">
     <div class="d-flex mb-4 justify-end">
       <v-btn
-        v-if="userHasOneOfPermissions(['USER:ADD'])"
+        v-if="userHasOneOfPermissions(['USER:CREATE'])"
         prepend-icon="mdi-plus"
         color="primary"
         rounded="xl"
@@ -11,7 +11,7 @@
         <span class="text-none">Ajouter</span>
       </v-btn>
       <v-btn
-        v-if="userHasOneOfPermissions(['USER:EDIT'])"
+        v-if="userHasOneOfPermissions(['USER:UPDATE'])"
         :disabled="!selectedUser"
         prepend-icon="mdi-pencil"
         color="white"
@@ -32,6 +32,21 @@
         @click="onDeleteUser()"
       >
         <span class="text-none">Supprimer</span>
+      </v-btn>
+      <v-btn
+        v-if="
+          userHasOneOfPermissions(['USER.VALIDATE'])
+            && selectedUserCanBeValidated
+        "
+        :disabled="validationInLoading"
+        :loading="validationInLoading"
+        prepend-icon="mdi-check"
+        color="white"
+        rounded="xl"
+        class="ml-2"
+        @click="onValidateUser()"
+      >
+        <span class="text-none">Validate Admin</span>
       </v-btn>
     </div>
 
@@ -61,6 +76,32 @@
                 {{ role.name }}
               </v-chip>
             </v-chip-group>
+            <v-chip
+              v-if="userCanBeValidated(item)"
+              color="green"
+              variant="tonal"
+              size="small"
+              class="mb-2"
+            >
+              Waiting for validation
+            </v-chip>
+          </template>
+          <template #[`item.lock`]="{ item }">
+            <v-switch
+              :model-value="item.locked"
+              :loading="locksInLoading[item.id]"
+              :disabled="usersLoading || locksInLoading[item.id] ||
+                (item.locked
+                  ? !userHasOneOfPermissions(['USER.UNLOCK'])
+                  : !userHasOneOfPermissions(['USER.LOCK'])
+                )
+              "
+              color="primary"
+              @update:model-value="onToggleLockState($event, item)"
+            />
+          </template>
+          <template #[`item.branch`]="{ item }">
+            {{ item.branch?.label }}
           </template>
         </v-data-table-server>
       </template>
@@ -83,7 +124,7 @@
 
 <script lang="ts" setup>
 import { useUserStore } from '@/stores/user'
-import { shouldHaveOneOfPermissions, userHasOneOfPermissions } from '@/utilities/auth.util'
+import { shouldHaveOneOfPermissions, userHasOneOfPermissions, userIsAdmin } from '@/utilities/auth.util'
 import { UserI } from '~/types/user'
 
 definePageMeta({
@@ -98,7 +139,7 @@ useAdminBreadcrumb('mdi-account-group', [{
 }])
 
 const userStore = useUserStore()
-const { fetchUsersWithPagination, deleteUser } = userStore
+const { fetchUsersWithPagination, deleteUser, lockUser, unlockUser, validateUser } = userStore
 
 const itemsPerPage = ref(10)
 const page = ref(1)
@@ -109,6 +150,8 @@ const userFormDialogVisible = ref(false)
 const userFormDialogAction = ref<string | undefined>(undefined)
 const confirmDialogVisible = ref(false)
 const deletionInLoading = ref(false)
+const validationInLoading = ref(false)
+const locksInLoading = ref<boolean[]>([])
 const usersLoading = ref(false)
 
 const textConfirmDeletion = computed(
@@ -117,6 +160,10 @@ const textConfirmDeletion = computed(
 
 const selectedUser = computed<UserI | null>(
   () => (selectedUsers.value.length > 0 ? selectedUsers.value[0] : null)
+)
+
+const selectedUserCanBeValidated = computed<boolean>(
+  () => !!selectedUser.value && userCanBeValidated(selectedUser.value)
 )
 
 const headers = [
@@ -135,6 +182,10 @@ const headers = [
     key: 'roles'
   }
 ]
+
+function userCanBeValidated (user: UserI): boolean {
+  return userIsAdmin(user) && !user.validatedByUserId
+}
 
 function onEditUser () {
   userFormDialogAction.value = 'update'
@@ -159,11 +210,43 @@ async function onConfirmDeletion () {
   }
 }
 
+async function onValidateUser () {
+  if (selectedUser.value) {
+    validationInLoading.value = true
+    try {
+      await validateUser(selectedUser.value.id)
+      refreshUsers()
+      validationInLoading.value = false
+    } catch (error) {
+      validationInLoading.value = false
+    }
+  }
+}
+
 function refreshUsers () {
   loadUsers({
     page: page.value,
     itemsPerPage: itemsPerPage.value
   })
+}
+
+async function onToggleLockState (locked: unknown, user: UserI) {
+  locksInLoading.value[user.id] = true
+  try {
+    if (locked as boolean) {
+      await lockUser(user.id)
+    } else {
+      await unlockUser(user.id)
+    }
+    users.value = users.value.map((u) => {
+      if (u.id === user.id) {
+        return { ...u, locked: locked as boolean }
+      }
+      return u
+    })
+  } finally {
+    locksInLoading.value[user.id] = false
+  }
 }
 
 async function loadUsers (payload: { page: number, itemsPerPage: number }) {
